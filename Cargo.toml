@@ -1,24 +1,27 @@
 [package]
-name = "nquads-syntax"
-version = "0.19.0"
-edition = "2021"
-authors = ["Timothée Haudebourg <author@haudebourg.net>"]
+name = "n-quads"
 description = "RDF 1.1 N-Quads parser with code mapping metadata"
-categories = ["parsing"]
-keywords = ["parsing", "rdf", "n-quads", "w3c"]
-repository = "https://github.com/timothee-haudebourg/nquads-syntax"
-documentation = "https://docs.rs/nquads-syntax"
-license = "MIT/Apache-2.0"
+version = "0.20.0"
+edition = "2024"
+rust-version = "1.85.0"
+authors = [
+    "Timothée Haudebourg <author@haudebourg.net>",
+    "Matej Škvarč <matej.skvarc@senlab.io>",
+]
+license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/mskvarc/n-quads/"
+keywords = ["parsing", "rdf", "n-quads", "w3c"]
+categories = ["parsing"]
 
 [dependencies]
-iref = "3.2.2"
 decoded-char = "0.1.1"
+iref = "3.2.2"
 langtag = "0.4.0"
 locspan = "0.9.2"
 rdf-types = { git = "https://github.com/timothee-haudebourg/rdf-types", rev = "da0dbdd" }
 
 [dev-dependencies]
-codespan-reporting = "0.11.1"
-log = "0.4.17"
-stderrlog = "0.5.3"
+codespan-reporting = "0.13.1"
+log = "0.4.29"
+stderrlog = "0.6.0"

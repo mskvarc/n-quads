@@ -1,11 +1,11 @@
-use nquads_syntax::Parse;
+use n_quads::Parse;
 use std::path::Path;
 
 fn parse<P: AsRef<Path>>(path: P) {
 	stderrlog::new().init().ok();
 	match std::fs::read_to_string(&path) {
 		Ok(buffer) => {
-			match nquads_syntax::GrdfDocument::parse_str(&buffer) {
+			match n_quads::GrdfDocument::parse_str(&buffer) {
 				Ok(_) => (), // success!
 				Err(e) => {
 					log::error!("parse error: {e}");
