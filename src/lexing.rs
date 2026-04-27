@@ -1,6 +1,6 @@
 use super::BlankIdBuf;
 use decoded_char::DecodedChar;
-use iref::IriBuf;
+use iri_rs::IriBuf;
 use langtag::LangTagBuf;
 use locspan::{Span, Spanned};
 use std::{fmt, iter::Peekable};
@@ -294,7 +294,7 @@ impl<E, C: Iterator<Item = Result<DecodedChar, E>>> Lexer<C, E> {
 						Some('u') => self.next_uchar(span, 4)?,
 						Some('U') => self.next_uchar(span, 8)?,
 						unexpected => {
-							return Err(LexingError::Unexpected(unexpected, self.pos.last()))
+							return Err(LexingError::Unexpected(unexpected, self.pos.last()));
 						}
 					};
 
@@ -360,7 +360,7 @@ impl<E, C: Iterator<Item = Result<DecodedChar, E>>> Lexer<C, E> {
 						Some('"') => '"',
 						Some('\\') => '\\',
 						unexpected => {
-							return Err(LexingError::Unexpected(unexpected, self.pos.last()))
+							return Err(LexingError::Unexpected(unexpected, self.pos.last()));
 						}
 					};
 
@@ -406,7 +406,7 @@ impl<E, C: Iterator<Item = Result<DecodedChar, E>>> Lexer<C, E> {
 									return Err(LexingError::Unexpected(
 										unexpected,
 										self.pos.last(),
-									))
+									));
 								}
 							}
 						}

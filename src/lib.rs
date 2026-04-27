@@ -7,14 +7,14 @@ mod parsing;
 
 pub use lexing::LexingError;
 pub use parsing::*;
-pub use rdf_types::BlankIdBuf;
-use rdf_types::{Quad, RdfQuad};
+pub use rdf_rs::BlankIdBuf;
+use rdf_rs::{GeneralizedQuad, LexicalQuad};
 
 /// N-Quads document.
-pub type Document = Vec<RdfQuad>;
+pub type Document = Vec<LexicalQuad>;
 
 /// gRDF N-Quads document.
-pub type GrdfDocument = Vec<Quad>;
+pub type GrdfDocument = Vec<GeneralizedQuad>;
 
 pub fn document_from_str(string: &str) -> Result<(Document, CodeMap), parsing::Error> {
 	Document::parse_str(string)

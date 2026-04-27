@@ -1,11 +1,11 @@
 use crate::{
-	lexing::{Lexer, LexingError, Token},
 	Document, GrdfDocument,
+	lexing::{Lexer, LexingError, Token},
 };
 use decoded_char::DecodedChar;
-use iref::IriBuf;
+use iri_rs::IriBuf;
 use locspan::{Span, Spanned};
-use rdf_types::{Id, Literal, LiteralType, LocalTerm, Quad, RdfQuad, XSD_STRING};
+use rdf_rs::{Datatype, GeneralizedQuad, Id, LexicalQuad, Literal, LiteralType, LocalTerm};
 use std::fmt;
 
 #[derive(Debug)]
@@ -97,7 +97,13 @@ where
 				match self.next_token()? {
 					Some(Token::Iri(iri, iri_span)) => {
 						span.append(iri_span);
-						Ok((Literal::new(value, LiteralType::Any(iri)), span))
+						Ok((
+							Literal::new(
+								value,
+								LiteralType::Any(unsafe { Datatype::new_unchecked(iri) }),
+							),
+							span,
+						))
 					}
 					Some(token) => {
 						let span = token.span();
@@ -106,10 +112,7 @@ where
 					None => Err(Error::Unexpected(None, self.position.into())),
 				}
 			}
-			_ => Ok((
-				Literal::new(value, LiteralType::Any(XSD_STRING.to_owned())),
-				span,
-			)),
+			_ => Ok((Literal::new(value, LiteralType::xsd_string()), span)),
 		}
 	}
 
@@ -146,7 +149,7 @@ where
 	fn parse_term(&mut self) -> Result<(LocalTerm, Span), Error<E>> {
 		match self.next_token()? {
 			Some(Token::Iri(iri, span)) => Ok((LocalTerm::iri(iri), span)),
-			Some(Token::BlankNodeLabel(label, span)) => Ok((LocalTerm::Anonymous(label), span)),
+			Some(Token::BlankNodeLabel(label, span)) => Ok((LocalTerm::BlankId(label), span)),
 			Some(Token::StringLiteral(value, span)) => {
 				let (literal, span) = self.parse_literal(value, span)?;
 				Ok((LocalTerm::literal(literal), span))
@@ -177,7 +180,7 @@ where
 		}
 	}
 
-	fn parse_quad(&mut self) -> Result<(RdfQuad, QuadSpans), Error<E>> {
+	fn parse_quad(&mut self) -> Result<(LexicalQuad, QuadSpans), Error<E>> {
 		let (s, s_span) = self.parse_id()?;
 		let (p, p_span) = self.parse_iri()?;
 		let (o, o_span) = self.parse_term()?;
@@ -185,12 +188,12 @@ where
 		let dot_span = self.parse_dot()?;
 		let span = s_span.union(dot_span);
 		Ok((
-			Quad(s, p, o, g),
-			(span, Quad(s_span, p_span, o_span, g_span)),
+			LexicalQuad::new(s, p, o, g),
+			(span, GeneralizedQuad(s_span, p_span, o_span, g_span)),
 		))
 	}
 
-	fn parse_grdf_quad(&mut self) -> Result<(Quad, QuadSpans), Error<E>> {
+	fn parse_grdf_quad(&mut self) -> Result<(GeneralizedQuad, QuadSpans), Error<E>> {
 		let (s, s_span) = self.parse_term()?;
 		let (p, p_span) = self.parse_term()?;
 		let (o, o_span) = self.parse_term()?;
@@ -198,12 +201,12 @@ where
 		let dot_span = self.parse_dot()?;
 		let span = s_span.union(dot_span);
 		Ok((
-			Quad(s, p, o, g),
-			(span, Quad(s_span, p_span, o_span, g_span)),
+			GeneralizedQuad(s, p, o, g),
+			(span, GeneralizedQuad(s_span, p_span, o_span, g_span)),
 		))
 	}
 
-	fn parse_document(&mut self) -> Result<(Vec<RdfQuad>, CodeMap), Error<E>> {
+	fn parse_document(&mut self) -> Result<(Vec<LexicalQuad>, CodeMap), Error<E>> {
 		let mut quads = Vec::new();
 		let mut spans = Vec::new();
 
@@ -216,7 +219,7 @@ where
 		Ok((quads, spans))
 	}
 
-	fn parse_grdf_document(&mut self) -> Result<(Vec<Quad>, CodeMap), Error<E>> {
+	fn parse_grdf_document(&mut self) -> Result<(Vec<GeneralizedQuad>, CodeMap), Error<E>> {
 		let mut quads = Vec::new();
 		let mut spans = Vec::new();
 
@@ -237,7 +240,7 @@ fn split_option<A, B>(value: Option<(A, B)>) -> (Option<A>, Option<B>) {
 	}
 }
 
-pub type QuadSpans = (Span, Quad<Span>);
+pub type QuadSpans = (Span, GeneralizedQuad<Span>);
 
 pub type CodeMap = Vec<QuadSpans>;
 
