@@ -5,12 +5,16 @@ use crate::{
 use decoded_char::DecodedChar;
 use iri_rs::IriBuf;
 use locspan::{Span, Spanned};
-use rdf_rs::{Datatype, GeneralizedQuad, Id, LexicalQuad, Literal, LiteralType, LocalTerm};
+use rdfx::{Datatype, GeneralizedQuad, Id, LexicalQuad, Literal, LiteralType, LocalTerm};
 use std::fmt;
 
+/// Parse error.
 #[derive(Debug)]
 pub enum Error<E = LexingError> {
+	/// The token stream failed; typically a [`LexingError`].
 	Lexer(E),
+
+	/// Unexpected token, or unexpected end of input (`None`).
 	Unexpected(Option<Token>, Span),
 }
 
@@ -33,6 +37,10 @@ impl<E: 'static + std::error::Error> std::error::Error for Error<E> {
 	}
 }
 
+/// N-Quads parser.
+///
+/// Wraps a token iterator — normally a [`Lexer`] — with the one-token
+/// lookahead the grammar needs. Drive it through the [`Parse`] trait.
 pub struct Parser<L> {
 	lexer: L,
 	position: usize,
@@ -40,7 +48,8 @@ pub struct Parser<L> {
 }
 
 impl<L> Parser<L> {
-	pub fn new(lexer: L) -> Self {
+	/// Creates a new parser over the given token iterator.
+	pub const fn new(lexer: L) -> Self {
 		Self {
 			lexer,
 			position: 0,
@@ -240,16 +249,48 @@ fn split_option<A, B>(value: Option<(A, B)>) -> (Option<A>, Option<B>) {
 	}
 }
 
+/// Source spans of a single quad.
+///
+/// The first element covers the whole statement, terminating `.` included. The
+/// second holds one span per component — subject, predicate, object, and graph
+/// label when present.
 pub type QuadSpans = (Span, GeneralizedQuad<Span>);
 
+/// Source spans of every quad in a document, in source order.
+///
+/// Parallel to the document itself: `code_map[i]` describes `document[i]`.
 pub type CodeMap = Vec<QuadSpans>;
 
+/// N-Quads parsing methods.
+///
+/// Implemented for [`Document`](crate::Document) and
+/// [`GrdfDocument`](crate::GrdfDocument), which select the standard and the
+/// generalized grammar respectively. Every method returns the document
+/// together with its [`CodeMap`].
+///
+/// # Example
+///
+/// ```
+/// use n_quads::{Document, Parse};
+///
+/// let (document, _) = Document::parse_str("<http://a.example/s> <http://a.example/p> \"o\" .")?;
+/// assert_eq!(document.len(), 1);
+/// # Ok::<_, n_quads::Error>(())
+/// ```
 pub trait Parse: Sized {
+	/// Parses a document from an existing [`Parser`].
+	///
+	/// This is the single method implementors must provide; the rest are
+	/// wrappers that build the lexer and parser for you.
 	#[allow(clippy::type_complexity)]
 	fn parse_with<L, E>(parser: &mut Parser<L>) -> Result<(Self, CodeMap), Error<E>>
 	where
 		L: Iterator<Item = Result<Token, E>>;
 
+	/// Parses a document from a fallible iterator of decoded characters.
+	///
+	/// [`DecodedChar`] carries the byte length of each character in the
+	/// *source* encoding, so spans stay accurate for non-UTF-8 input.
 	#[inline(always)]
 	fn parse<C, E>(chars: C) -> Result<(Self, CodeMap), Error<LexingError<E>>>
 	where
@@ -259,6 +300,7 @@ pub trait Parse: Sized {
 		Self::parse_with(&mut parser)
 	}
 
+	/// Parses a document from an infallible iterator of decoded characters.
 	#[inline(always)]
 	fn parse_infallible<C>(chars: C) -> Result<(Self, CodeMap), Error>
 	where
@@ -267,6 +309,7 @@ pub trait Parse: Sized {
 		Self::parse(chars.map(Ok))
 	}
 
+	/// Parses a document from a fallible iterator of UTF-8 characters.
 	#[inline(always)]
 	fn parse_utf8<C, E>(chars: C) -> Result<(Self, CodeMap), Error<LexingError<E>>>
 	where
@@ -275,6 +318,7 @@ pub trait Parse: Sized {
 		Self::parse(decoded_char::FallibleUtf8Decoded::new(chars))
 	}
 
+	/// Parses a document from an infallible iterator of UTF-8 characters.
 	#[inline(always)]
 	fn parse_utf8_infallible<C>(chars: C) -> Result<(Self, CodeMap), Error>
 	where
@@ -283,6 +327,9 @@ pub trait Parse: Sized {
 		Self::parse_infallible(decoded_char::Utf8Decoded::new(chars))
 	}
 
+	/// Parses a document from a fallible iterator of UTF-16 characters.
+	///
+	/// Spans are reported in UTF-16 code units.
 	#[inline(always)]
 	fn parse_utf16<C, E>(chars: C) -> Result<(Self, CodeMap), Error<LexingError<E>>>
 	where
@@ -291,6 +338,9 @@ pub trait Parse: Sized {
 		Self::parse(decoded_char::FallibleUtf16Decoded::new(chars))
 	}
 
+	/// Parses a document from an infallible iterator of UTF-16 characters.
+	///
+	/// Spans are reported in UTF-16 code units.
 	#[inline(always)]
 	fn parse_utf16_infallible<C>(chars: C) -> Result<(Self, CodeMap), Error>
 	where
@@ -299,6 +349,7 @@ pub trait Parse: Sized {
 		Self::parse_infallible(decoded_char::Utf16Decoded::new(chars))
 	}
 
+	/// Parses a document from a string.
 	#[inline(always)]
 	fn parse_str(string: &str) -> Result<(Self, CodeMap), Error> {
 		Self::parse_utf8_infallible(string.chars())

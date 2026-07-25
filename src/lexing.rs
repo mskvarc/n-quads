@@ -1,3 +1,9 @@
+//! N-Quads lexing.
+//!
+//! [`Lexer`] turns a character iterator into a [`Token`] iterator, attaching a
+//! [`Span`] to each token. It is driven by [`Parse`](crate::Parse) and rarely
+//! needs to be used directly — reach for it when you want the token stream
+//! itself, for syntax highlighting or error recovery.
 use super::BlankIdBuf;
 use decoded_char::DecodedChar;
 use iri_rs::IriBuf;
@@ -8,10 +14,19 @@ use std::{fmt, iter::Peekable};
 /// Lexing error.
 #[derive(Debug)]
 pub enum LexingError<E = std::convert::Infallible> {
+	/// The characters after `@` do not form a valid language tag.
 	InvalidLangTag(Span),
+
+	/// A `\u` / `\U` escape named a value that is not a Unicode scalar.
 	InvalidCodepoint(u32, Span),
+
+	/// The characters between `<` and `>` do not form a valid IRI.
 	InvalidIriRef(String, Span),
+
+	/// Unexpected character, or unexpected end of input (`None`).
 	Unexpected(Option<char>, Span),
+
+	/// The underlying character stream failed.
 	Stream(E),
 }
 
@@ -42,11 +57,22 @@ impl<E: 'static + std::error::Error> std::error::Error for LexingError<E> {
 /// Token.
 #[derive(Debug)]
 pub enum Token {
+	/// Language tag, `@en`.
 	LangTag(LangTagBuf, Span),
+
+	/// IRI, `<http://example.com/>`.
 	Iri(IriBuf, Span),
+
+	/// String literal, `"value"`, with escapes already resolved.
 	StringLiteral(String, Span),
+
+	/// Blank node label, `_:b0`.
 	BlankNodeLabel(BlankIdBuf, Span),
+
+	/// Statement terminator, `.`.
 	Dot(Span),
+
+	/// Datatype marker, `^^`.
 	Carets(Span),
 }
 
@@ -125,7 +151,7 @@ struct Position {
 }
 
 impl Position {
-	fn current(&self) -> Span {
+	const fn current(&self) -> Span {
 		self.span
 	}
 
@@ -133,7 +159,7 @@ impl Position {
 		self.span.end.into()
 	}
 
-	fn last(&self) -> Span {
+	const fn last(&self) -> Span {
 		self.last_span
 	}
 }
@@ -148,6 +174,7 @@ pub struct Lexer<C: Iterator<Item = Result<DecodedChar, E>>, E> {
 }
 
 impl<C: Iterator<Item = Result<DecodedChar, E>>, E> Lexer<C, E> {
+	/// Creates a new lexer over the given character iterator.
 	pub fn new(chars: C) -> Self {
 		Self {
 			chars: Chars(chars.peekable()),
@@ -462,15 +489,15 @@ impl<E, C: Iterator<Item = Result<DecodedChar, E>>> Iterator for Lexer<C, E> {
 	}
 }
 
-fn is_pn_chars_base(c: char) -> bool {
+const fn is_pn_chars_base(c: char) -> bool {
 	matches!(c, 'A'..='Z' | 'a'..='z' | '\u{00c0}'..='\u{00d6}' | '\u{00d8}'..='\u{00f6}' | '\u{00f8}'..='\u{02ff}' | '\u{0370}'..='\u{037d}' | '\u{037f}'..='\u{1fff}' | '\u{200c}'..='\u{200d}' | '\u{2070}'..='\u{218f}' | '\u{2c00}'..='\u{2fef}' | '\u{3001}'..='\u{d7ff}' | '\u{f900}'..='\u{fdcf}' | '\u{fdf0}'..='\u{fffd}' | '\u{10000}'..='\u{effff}')
 }
 
-fn is_pn_chars_u(c: char) -> bool {
+const fn is_pn_chars_u(c: char) -> bool {
 	is_pn_chars_base(c) || matches!(c, '_' | ':')
 }
 
-fn is_pn_chars(c: char) -> bool {
+const fn is_pn_chars(c: char) -> bool {
 	is_pn_chars_u(c)
 		|| matches!(c, '-' | '0'..='9' | '\u{00b7}' | '\u{0300}'..='\u{036f}' | '\u{203f}'..='\u{2040}')
 }
