@@ -28,7 +28,7 @@ Fork of [`nquads-syntax`](https://crates.io/crates/nquads-syntax) by [Timothée 
 
 - Terms come from [`rdfx`](https://crates.io/crates/rdfx) (fork of `rdf-types`) and IRIs from [`iri-rs`](https://crates.io/crates/iri-rs) (fork of `iref`), which is the point of the fork.
 - `langtag` 0.4 → 1.1.
-- Rust 2024 edition, MSRV 1.87.
+- Rust 2024 edition, MSRV 1.96.
 - Renamed crate: `nquads-syntax` → `n-quads`.
 
 Upstream went to `rdf-syntax` 1.0 for its own 0.20.0. If you are not otherwise invested in the `rdfx` / `iri-rs` stack, [upstream](https://crates.io/crates/nquads-syntax) is likely the crate you want.
@@ -81,7 +81,7 @@ Spans are reported in the units of the source encoding, so they stay usable for 
 
 ## MSRV
 
-Rust 1.87 (edition 2024) — floor set by `langtag` 1.1.
+Rust 1.96 (edition 2024).
 
 ## Attribution
 
