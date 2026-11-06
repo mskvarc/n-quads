@@ -29,7 +29,7 @@ locspan = "1.0.0"
 rdfx = { version = "0.25.0", features = ["meta"] }
 
 [dev-dependencies]
-log = "0.4.29"
+log = "0.4.35"
 stderrlog = "0.6.0"
 
 [lints.clippy]
