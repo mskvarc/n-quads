@@ -21,12 +21,12 @@ all-features = true
 
 [dependencies]
 decoded-char = "0.1.1"
-iri-rs = "3.3.2"
+iri-rs = "4.0.0"
 langtag = "1.1.0"
 # Must track `rdfx`'s `locspan`: `Span` crosses the boundary between the two
 # crates, so a mismatched major would be a distinct, incompatible type.
 locspan = "1.0.0"
-rdfx = { version = "0.24.0", features = ["meta"] }
+rdfx = { version = "0.25.0", features = ["meta"] }
 
 [dev-dependencies]
 log = "0.4.29"
